@@ -1,159 +1,157 @@
-# Nonlinear RC Beam-Column Joint Modelling in Abaqus
+# Automated 2D RC Frame Analysis & Preliminary Design
 
-This project presents an automated finite-element workflow for nonlinear analysis of a reinforced-concrete beam-column joint using the Abaqus Python API. The workflow generates the model, assigns nonlinear material behaviour, applies boundary conditions and loading, executes the baseline analysis, and extracts engineering results. The script also defines a parameterized case framework that can be enabled for later comparison.
+A Python-based desktop tool for generating, analysing, visualising, and preliminarily checking a 2D multi-storey reinforced-concrete building frame.
 
-## Why This Project Matters
+The project demonstrates the matrix stiffness method, structural modelling, load application, member-force recovery, IS-code-aware preliminary checks, and automated reporting.
 
-Reinforced-concrete beam-column joints are critical regions in moment-resisting frames because they transfer high shear, bond, and confinement demands between beams and columns. Manual nonlinear modelling in Abaqus is time-consuming and difficult to reproduce, so this project focuses on automation, a parameterized modelling framework, and engineering interpretation.
+Technology used: Python, NumPy, Tkinter, Pillow (PIL), ReportLab, and OpenPyXL.
 
-## What The Script Builds
+## Sample Outputs
 
-The Abaqus script automatically creates:
+Undeformed frame:
 
-- Concrete beam and column solid geometry
-- Longitudinal beam reinforcement
-- Longitudinal column reinforcement
-- Beam stirrups and column ties
-- Embedded reinforcement constraints
-- Concrete damaged plasticity material model
-- Steel elastic-plastic reinforcement model
-- Column-base fixity
-- Axial load on the column
-- Monotonic or cyclic beam-tip displacement loading
-- Datum-plane partitions around the joint
-- Locally refined structured `C3D8R` concrete mesh and `T3D2` reinforcement mesh
-- Job creation, submission, and completion monitoring
-- Automated extraction of load-displacement and damage results
+![Undeformed frame](docs/sample_undeformed_frame.png)
 
-## Parameterized Study Framework
+Deformed shape:
 
-By default, the script builds and runs **one baseline model** so its modelling assumptions and convergence can be validated. The full parametric set can be enabled later from `RUN_SETTINGS`.
+![Deformed shape](docs/sample_deformed_shape.png)
 
-The parameterized framework defines cases for:
+Beam shear force diagram:
 
-- Stirrup spacing: 75 mm, 100 mm, 150 mm
-- Concrete compressive strength: 35 MPa and 45 MPa
+![Beam SFD](docs/sample_beam_sfd.png)
 
-The same framework can also be extended to vary:
+Beam bending moment diagram:
 
-- Reinforcement ratio
-- Beam-column size ratio
-- Column axial load ratio
-- Joint confinement
-- Loading protocol
+![Beam BMD](docs/sample_beam_bmd.png)
 
-## Extracted Outputs
+## What The Tool Does
 
-After jobs are run and result extraction is enabled, the script exports:
+- Generates a 2D RC frame from user inputs
+- Assembles the global stiffness matrix
+- Applies gravity and lateral loads
+- Solves nodal displacements
+- Calculates support reactions
+- Calculates beam shear forces and bending moments
+- Calculates column axial forces
+- Draws undeformed and deformed frame plots
+- Produces paginated SFD and BMD plots
+- Evaluates IS-style strength load combinations
+- Reports governing design envelopes
+- Performs preliminary member checks
+- Estimates preliminary beam steel and column minimum steel
+- Runs benchmark validation checks
+- Creates PDF and Excel reports
+- Stores every analysis in a separate dated run folder
 
-- Beam-tip load-displacement curve
-- Maximum load
-- Maximum displacement
-- Initial stiffness
-- Secant stiffness
-- Tensile concrete damage
-- Compressive concrete damage
-- Reinforcement stress
-- First tensile-damage load, displacement, element, and approximate coordinates
-- Interpreted failure mode
+## Inputs
 
-Results are written to:
-
-```text
-Project_2/rc_joint_results/
-```
-
-with one load-displacement CSV per case and a combined:
-
-```text
-parametric_summary.csv
-```
-
-The saved `rc_joint_parametric_models.cae` database and `Job_Base_Review.inp` input file are included with the project. The complete ODB can be distributed separately as a GitHub release asset because of its size.
+- Number of storeys and bays
+- Bay width and storey height
+- Beam and column dimensions
+- Concrete grade
+- Steel grade
+- Dead load and live load
+- Seismic zone or manual lateral load
+- Support condition
 
 ## How To Run
 
-The default workflow automatically builds, submits, and extracts results for one baseline model. The full parametric batch remains disabled until the baseline analysis has been validated.
+Install dependencies once:
 
-Open a terminal in this folder and run the script through Abaqus/CAE:
-
-```bash
-abaqus cae script=abaqus_rc_joint_parametric.py
+```powershell
+python -m pip install -r requirements.txt
 ```
 
-This creates the concrete joint, reinforcement, embedded constraints, material definitions, mesh, steps, loads, boundary conditions, and job definition. It then submits the baseline job, waits for completion, and extracts the available results.
+Open the desktop GUI:
 
-The default review model is an exterior beam-column joint: the beam is attached at the column face, centered vertically at the joint, and centered through the column width.
+```powershell
+python project_1.py --gui
+```
 
-The script also saves an Abaqus database:
+Run the built-in demo:
+
+```powershell
+python project_1.py --demo
+```
+
+## Output Filing System
+
+Each analysis creates its own folder inside `outputs/`, for example:
 
 ```text
-rc_joint_parametric_models.cae
+outputs/
+  20260809_163506_10storey_5bay_zoneIII_fixed/
+    run_summary.txt
+    plots/
+      undeformed_frame.png
+      deformed_shape.png
+      beam_sfd_page_01.png
+      beam_bmd_page_01.png
+    reports/
+      rc_frame_analysis_report.pdf
+      rc_frame_analysis_report.xlsx
 ```
 
-You can use the Abaqus/CAE Job Monitor to follow the nonlinear analysis while it runs.
+This makes it easy to compare multiple structural models without overwriting reports.
 
-For unattended baseline execution without opening the full GUI, use:
+## Validation Checks
 
-```bash
-abaqus cae noGUI=abaqus_rc_joint_parametric.py
-```
+The report includes verification checks for:
 
-After the baseline model is validated, enable the full parameterized batch by changing `build_all_parametric_cases` to `True` near the top of the script:
+- Horizontal force equilibrium
+- Vertical force equilibrium
+- Global moment equilibrium
+- Free-joint stiffness equation residual
+- Base shear distribution
 
-```python
-RUN_SETTINGS = {
-    "clear_previous_generated_models": True,
-    "build_all_parametric_cases": True,
-    "submit_jobs": True,
-    "extract_results": True,
-    "save_cae": True,
-    "cae_file": "rc_joint_parametric_models.cae",
-}
-```
+The verification section reports applied loads, support reactions, residuals, and percentage error. Very small residuals, such as `1e-12`, are expected because of floating-point numerical precision.
 
-The script is intended for the Abaqus/CAE Python environment because it imports Abaqus-specific modules such as `abaqus`, `abaqusConstants`, `mesh`, and `odbAccess`.
+## Load Combinations
 
-## Loads And Damage Review
+The tool uses the service case `DL + LL + EQ` for frame visualisation and service-level displacement plots.
 
-The analysis uses two sequential nonlinear static steps:
+For preliminary strength checks, it creates a design envelope from:
 
-- `Axial_Load` applies the column axial force at `RP_COLUMN_TOP` while the column base is fixed.
-- `Beam_Load` retains the axial force and applies the prescribed vertical displacement at `RP_BEAM_TIP`.
+- `1.5(DL + LL)`
+- `1.2(DL + LL + EQ)`
+- `1.2(DL + LL - EQ)`
+- `1.5(DL + EQ)`
+- `1.5(DL - EQ)`
+- `0.9DL + 1.5EQ`
+- `0.9DL - 1.5EQ`
 
-To inspect analysis results, open `Job_Base_Review.odb` in the Visualization module. Do not select a boundary-condition variable from the `.cae` model database for a contour plot.
+The report identifies the governing combination for beam bending, beam shear, column axial force, and lateral displacement.
 
-For concrete tensile damage, choose field output `DAMAGET` at the integration points. A value of `0` is undamaged and a value approaching `1` indicates severe tensile stiffness degradation. Animate the frames to see where damage starts and how it spreads. Use `DAMAGEC` for compressive damage and `S, Mises` on the reinforcement display group for steel stress.
+## Benchmark Checks
 
-The generated `parametric_summary.csv` currently contains the executed baseline case. If the full parameterized batch is enabled and completed, the same summary file can be used to compare the defined cases. It reports the first frame where `DAMAGET` reaches the configured `damage_onset_threshold`, together with beam-tip reaction, displacement, element label, and approximate element-centroid coordinates.
+The generated report includes simple validation checks:
 
-## Baseline Damage Results
+- Fixed-end beam under UDL compared with `V = wL/2` and `M = wL^2/12`
+- Seismic storey forces summed back to base shear
+- Stiffness trend check showing that larger columns reduce lateral displacement
 
-### Compressive Damage
+## Engineering Notes
 
-![Final concrete compression damage](docs/images/damagec_final.png)
+This is a preliminary academic and automation tool. It is not a substitute for full professional structural design.
 
-Compressive damage concentrates in the joint panel and at the beam-column interface. The maximum `DAMAGEC` value reaches `0.90`, indicating localized concrete crushing risk at the final `3.5%` drift level. The model nevertheless retains approximately `99.5%` of its peak global resistance at the final frame.
+The design checks use simplified IS-code-aware concepts. A real project must consider complete IS 456, IS 1893, IS 13920, detailed load combinations, ductile detailing, serviceability, reinforcement detailing, and professional review.
 
-### Tensile Damage
+## Technical Concepts Demonstrated
 
-![Final concrete tensile damage](docs/images/damaget_final.png)
+- How a building frame is idealised as nodes and beam-column elements
+- How local member stiffness matrices are transformed into global coordinates
+- How the global stiffness matrix is assembled
+- How support conditions are applied
+- How loads are converted into equivalent nodal loads
+- How nodal displacements are solved using matrix equations
+- How support reactions and member forces are recovered
+- How SFD and BMD diagrams are generated from analysis results
+- How load combinations are used to create design envelopes
+- How engineering calculations can be automated into reports
+- Why validation and result interpretation matter as much as coding
 
-Tensile damage spreads from the joint panel into the beam. The maximum `DAMAGET` value reaches `0.95`, indicating severe localized cracking and substantial stiffness degradation. Damage near the column ends should be interpreted cautiously because local concentrations can be influenced by the coupling and support boundary conditions.
+## Main Files
 
-## Engineering Interpretation
-
-The baseline model reached the prescribed `84 mm` beam-tip displacement (`3.5%` drift) and produced the following response:
-
-- First tensile damage at approximately `8.56 kN` and `0.57 mm` beam-tip displacement
-- Peak lateral resistance of `80.74 kN` at approximately `78.87 mm`
-- Final resistance of `80.34 kN`, retaining approximately `99.5%` of peak load
-- Maximum reinforcement stress of approximately `537 MPa`, exceeding the `500 MPa` yield strength
-- Maximum tensile and compressive damage values of `0.95` and `0.90`, respectively
-
-These baseline results indicate reinforcement yielding, substantial stiffness degradation, and localized concrete damage while the joint retains most of its peak global resistance at the target drift. The parameterized framework is prepared to test the following expected trends after all cases are executed:
-
-- Reducing stirrup spacing should improve joint confinement, delay damage concentration, and increase post-cracking stiffness retention.
-- Increasing concrete strength should increase compressive capacity and initial stiffness, but may not fully prevent joint damage if confinement is inadequate.
-- Higher reinforcement stress near the beam-column interface indicates flexural yielding or bond-critical behaviour.
-- Concentrated tensile damage in the joint panel suggests joint shear cracking, while high compressive damage near the compression zone suggests crushing risk.
+- `project_1.py` - main application and analysis engine
+- `requirements.txt` - Python packages required to run the project
+- `README.md` - project explanation and usage guide
