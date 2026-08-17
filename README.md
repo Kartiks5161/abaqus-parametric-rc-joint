@@ -49,18 +49,18 @@ After jobs are run and result extraction is enabled, the script exports:
 - Beam-tip load-displacement curve
 - Maximum load
 - Maximum displacement
-- Initial stiffness
+- Initial stiffness, calculated as the secant slope to the first response point reaching 10% of peak load
 - Secant stiffness
 - Tensile concrete damage
 - Compressive concrete damage
-- Reinforcement stress
+- Maximum reinforcement stress in the final analysis frame
 - First tensile-damage load, displacement, element, and approximate coordinates
-- Interpreted failure mode
+- Rule-based response-mode indicator
 
 Results are written to:
 
 ```text
-Project_2/rc_joint_results/
+rc_joint_results/
 ```
 
 with one load-displacement CSV per case and a combined:
@@ -69,9 +69,19 @@ with one load-displacement CSV per case and a combined:
 parametric_summary.csv
 ```
 
+The full parameter batch and `abaqus_extract_all_existing.py` write the combined four-case summary. Running the default baseline workflow writes a one-row baseline summary to the same filename, so rerun the all-existing-results extractor if you need to restore the combined four-case file afterward.
+
 For GitHub, the repository is intended to contain the automation scripts, documentation, result summaries, and selected images. Large Abaqus files such as `.odb`, `.cae`, `.dat`, `.msg`, and `.sta` outputs should be kept locally or shared separately through release assets because they can become very large.
 
 ## How To Run
+
+### Requirements And Units
+
+- Abaqus/CAE with Abaqus/Standard and its bundled Python environment
+- A consistent `N-mm-MPa` unit system throughout the model
+- Sufficient local storage for Abaqus output databases, which can each require several hundred megabytes
+
+The result files and contour images included here were generated with Abaqus/Standard 2026. The concrete damaged plasticity tables in the script are transparent baseline assumptions; they should be calibrated against appropriate experimental data before the model is used for design decisions or research conclusions.
 
 The default workflow automatically builds, submits, and extracts results for one baseline model. This keeps ordinary reruns manageable and avoids accidentally launching all nonlinear cases.
 
@@ -138,9 +148,11 @@ The analysis uses two sequential nonlinear static steps:
 
 To inspect analysis results, open `Job_Base_Review.odb` in the Visualization module. Do not select a boundary-condition variable from the `.cae` model database for a contour plot.
 
-For concrete tensile damage, choose field output `DAMAGET` at the integration points. A value of `0` is undamaged and a value approaching `1` indicates severe tensile stiffness degradation. Animate the frames to see where damage starts and how it spreads. Use `DAMAGEC` for compressive damage and `S, Mises` on the reinforcement display group for steel stress.
+For concrete tensile damage, choose field output `DAMAGET` at the integration points. A value of `0` is undamaged and a value approaching `1` indicates severe tensile stiffness degradation. Animate the frames to see where damage starts and how it spreads. Use `DAMAGEC` for compressive stiffness degradation and `S, Mises` on the reinforcement display group for steel stress.
 
 The generated `parametric_summary.csv` contains the completed selected cases. It reports the first frame where `DAMAGET` reaches the configured `damage_onset_threshold`, together with beam-tip reaction, displacement, element label, and approximate element-centroid coordinates.
+
+The reported response mode is assigned automatically from reinforcement stress, final-frame concrete damage, and global strength-retention thresholds. It is an engineering screening indicator rather than a formally validated failure-mode classification.
 
 ## Baseline Damage Results
 
@@ -148,7 +160,7 @@ The generated `parametric_summary.csv` contains the completed selected cases. It
 
 ![Final concrete compression damage](docs/images/damagec_final.png)
 
-Compressive damage concentrates in the joint panel and at the beam-column interface. The maximum `DAMAGEC` value reaches `0.90`, indicating localized concrete crushing risk at the final `3.5%` drift level. The model nevertheless retains approximately `99.5%` of its peak global resistance at the final frame.
+Compressive damage concentrates in the joint panel and at the beam-column interface. The maximum `DAMAGEC` value reaches `0.90`, indicating severe localized compressive stiffness degradation and possible concrete crushing risk at the final `3.5%` drift level. Confirmation of crushing requires review of the corresponding concrete stresses and strains. The model nevertheless retains approximately `99.5%` of its peak global resistance at the final frame.
 
 ### Tensile Damage
 
@@ -163,15 +175,15 @@ The baseline model reached the prescribed `84 mm` beam-tip displacement (`3.5%` 
 - First tensile damage at approximately `8.56 kN` and `0.57 mm` beam-tip displacement
 - Peak lateral resistance of `80.74 kN` at approximately `78.87 mm`
 - Final resistance of `80.34 kN`, retaining approximately `99.5%` of peak load
-- Maximum reinforcement stress of approximately `537 MPa`, exceeding the `500 MPa` yield strength
+- Maximum final-frame reinforcement stress of approximately `537 MPa`, exceeding the `500 MPa` yield strength
 - Maximum tensile and compressive damage values of `0.95` and `0.90`, respectively
 
 These baseline results indicate reinforcement yielding, substantial stiffness degradation, and localized concrete damage while the joint retains most of its peak global resistance at the target drift. The selected parameter cases show the following model trends:
 
 - Reducing stirrup spacing from 150 mm to 75 mm slightly increases peak lateral resistance and secant stiffness in the generated model.
 - Increasing concrete strength from 35 MPa to 45 MPa increases initial stiffness and peak lateral resistance in the generated model.
-- Higher reinforcement stress near the beam-column interface indicates flexural yielding or bond-critical behaviour.
-- Concentrated tensile damage in the joint panel suggests joint shear cracking, while high compressive damage near the compression zone suggests crushing risk.
+- Higher reinforcement stress near the beam-column interface is consistent with flexural yielding. Because the reinforcement is embedded in the concrete with a perfect-bond constraint, this model does not simulate bond slip or bond failure.
+- Concentrated tensile damage in the joint panel is consistent with joint-region cracking, while high compressive damage near the compression zone suggests crushing risk. These interpretations should be confirmed using stress, strain, deformation, and damage histories and, where possible, experimental validation.
 
 ## Repository Contents
 
