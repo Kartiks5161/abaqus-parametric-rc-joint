@@ -1,10 +1,10 @@
-# Parametric Nonlinear RC Beam-Column Joint Modelling in Abaqus
+# Nonlinear RC Beam-Column Joint Modelling in Abaqus
 
-This project presents an automated finite-element workflow for nonlinear analysis of a reinforced-concrete beam-column joint using the Abaqus Python API. The workflow generates the model, assigns nonlinear material behaviour, applies boundary conditions and loading, executes the analysis, and extracts engineering results for comparison.
+This project presents an automated finite-element workflow for nonlinear analysis of a reinforced-concrete beam-column joint using the Abaqus Python API. The workflow generates the model, assigns nonlinear material behaviour, applies boundary conditions and loading, executes the baseline analysis, and extracts engineering results. The script also defines a parameterized case framework that can be enabled for later comparison.
 
 ## Why This Project Matters
 
-Reinforced-concrete beam-column joints are critical regions in moment-resisting frames because they transfer high shear, bond, and confinement demands between beams and columns. Manual nonlinear modelling in Abaqus is time-consuming and difficult to reproduce, so this project focuses on automation, parametric comparison, and engineering interpretation.
+Reinforced-concrete beam-column joints are critical regions in moment-resisting frames because they transfer high shear, bond, and confinement demands between beams and columns. Manual nonlinear modelling in Abaqus is time-consuming and difficult to reproduce, so this project focuses on automation, a parameterized modelling framework, and engineering interpretation.
 
 ## What The Script Builds
 
@@ -25,11 +25,11 @@ The Abaqus script automatically creates:
 - Job creation, submission, and completion monitoring
 - Automated extraction of load-displacement and damage results
 
-## Parametric Study
+## Parameterized Study Framework
 
 By default, the script builds and runs **one baseline model** so its modelling assumptions and convergence can be validated. The full parametric set can be enabled later from `RUN_SETTINGS`.
 
-The parametric study varies:
+The parameterized framework defines cases for:
 
 - Stirrup spacing: 75 mm, 100 mm, 150 mm
 - Concrete compressive strength: 35 MPa and 45 MPa
@@ -42,7 +42,7 @@ The same framework can also be extended to vary:
 - Joint confinement
 - Loading protocol
 
-## Outputs Compared
+## Extracted Outputs
 
 After jobs are run and result extraction is enabled, the script exports:
 
@@ -99,7 +99,7 @@ For unattended baseline execution without opening the full GUI, use:
 abaqus cae noGUI=abaqus_rc_joint_parametric.py
 ```
 
-After the baseline model is validated, enable the complete parametric study by changing `build_all_parametric_cases` to `True` near the top of the script:
+After the baseline model is validated, enable the full parameterized batch by changing `build_all_parametric_cases` to `True` near the top of the script:
 
 ```python
 RUN_SETTINGS = {
@@ -125,7 +125,7 @@ To inspect analysis results, open `Job_Base_Review.odb` in the Visualization mod
 
 For concrete tensile damage, choose field output `DAMAGET` at the integration points. A value of `0` is undamaged and a value approaching `1` indicates severe tensile stiffness degradation. Animate the frames to see where damage starts and how it spreads. Use `DAMAGEC` for compressive damage and `S, Mises` on the reinforcement display group for steel stress.
 
-The combined `parametric_summary.csv` reports the first frame where `DAMAGET` reaches the configured `damage_onset_threshold`, together with beam-tip reaction, displacement, element label, and approximate element-centroid coordinates.
+The generated `parametric_summary.csv` currently contains the executed baseline case. If the full parameterized batch is enabled and completed, the same summary file can be used to compare the defined cases. It reports the first frame where `DAMAGET` reaches the configured `damage_onset_threshold`, together with beam-tip reaction, displacement, element label, and approximate element-centroid coordinates.
 
 ## Baseline Damage Results
 
@@ -151,7 +151,7 @@ The baseline model reached the prescribed `84 mm` beam-tip displacement (`3.5%` 
 - Maximum reinforcement stress of approximately `537 MPa`, exceeding the `500 MPa` yield strength
 - Maximum tensile and compressive damage values of `0.95` and `0.90`, respectively
 
-These results indicate reinforcement yielding, substantial stiffness degradation, and localized concrete damage while the joint retains most of its peak global resistance at the target drift. The parametric cases are intended to test the following trends:
+These baseline results indicate reinforcement yielding, substantial stiffness degradation, and localized concrete damage while the joint retains most of its peak global resistance at the target drift. The parameterized framework is prepared to test the following expected trends after all cases are executed:
 
 - Reducing stirrup spacing should improve joint confinement, delay damage concentration, and increase post-cracking stiffness retention.
 - Increasing concrete strength should increase compressive capacity and initial stiffness, but may not fully prevent joint damage if confinement is inadequate.

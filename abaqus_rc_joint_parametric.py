@@ -1,4 +1,4 @@
-"""Parametric nonlinear RC beam-column joint model for Abaqus/CAE.
+"""Nonlinear RC beam-column joint model for Abaqus/CAE.
 
 Run inside Abaqus/CAE or with:
     abaqus cae script=abaqus_rc_joint_parametric.py
@@ -6,7 +6,8 @@ Run inside Abaqus/CAE or with:
 The script creates a reinforced-concrete exterior beam-column joint, embeds
 longitudinal bars and stirrups, assigns nonlinear concrete and steel materials,
 applies axial column load plus monotonic or cyclic beam-end displacement, creates
-analysis jobs, and can optionally submit jobs and extract result summaries.
+analysis jobs, and can optionally submit jobs and extract result summaries. It
+also defines a disabled-by-default parameterized case set for later comparison.
 """
 
 from __future__ import print_function
@@ -961,7 +962,7 @@ def run_study():
         mdb.Job(
             name=job_name,
             model=model.name,
-            description="Parametric nonlinear RC beam-column joint: %s" % p["case"],
+            description="Nonlinear RC beam-column joint model: %s" % p["case"],
             type=ANALYSIS,
             numCpus=p["cpus"],
             numDomains=p["cpus"],
