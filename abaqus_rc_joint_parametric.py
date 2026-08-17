@@ -186,13 +186,19 @@ def make_cdp_tables(fc_mpa):
         (0.15 * ft, 0.00150),
         (0.02 * ft, 0.00600),
     )
-    compression_damage = (
-        (0.00, 0.0000),
-        (0.15, 0.0005),
-        (0.35, 0.0015),
-        (0.65, 0.0035),
-        (0.90, 0.0080),
-    )
+    # Abaqus converts compression damage data to plastic strain internally.
+    # Define damage strains from monotonic target plastic strains so higher
+    # concrete-strength cases do not create decreasing converted plastic strain.
+    elastic_modulus = concrete_elastic_modulus(fc_mpa)
+    damage_values = (0.00, 0.15, 0.35, 0.65, 0.90)
+    target_plastic_strains = (0.0000, 0.00015, 0.00060, 0.00160, 0.00400)
+    compression_damage = []
+    for (stress, _), damage, plastic_strain in zip(compression, damage_values, target_plastic_strains):
+        damage_strain = plastic_strain
+        if damage > 0.0:
+            damage_strain += (damage / (1.0 - damage)) * stress / elastic_modulus
+        compression_damage.append((damage, damage_strain))
+    compression_damage = tuple(compression_damage)
     tension_damage = (
         (0.00, 0.00000),
         (0.40, 0.00025),

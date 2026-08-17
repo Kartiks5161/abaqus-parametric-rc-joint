@@ -1,0 +1,35 @@
+__pycache__/
+*.pyc
+
+# Abaqus generated files
+*.abq
+*.cae
+*.cae.*
+*.com
+*.dat
+*.env
+*.fil
+*.inp
+*.ipm
+*.jnl
+*.lck
+*.log
+*.mdl
+*.msg
+*.odb
+*.pac
+*.prt
+*.rec
+*.res
+*.rpy
+*.rpy.*
+*.sel
+*.sim
+*.sta
+*.stt
+*.023
+*.exception
+
+# Local temporary files
+*.tmp
+*.bak
